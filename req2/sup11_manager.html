@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUP11 MLデータ管理マネージャー</title>
+<style>
+  :root {
+    --bg: #0f172a; --surface: #1e293b; --card: #334155; --border: #475569;
+    --text: #f1f5f9; --text-dim: #94a3b8; --accent: #38bdf8; --accent2: #818cf8;
+    --green: #34d399; --yellow: #fbbf24; --red: #f87171;
+    --radius: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', 'Meiryo', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh;
+  }
+  /* === Header === */
+  .header {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 24px 32px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header h1 {
+    font-size: 1.5rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .header .subtitle { color: var(--text-dim); font-size: 0.85rem; }
+  /* === Progress === */
+  .progress-section { margin-top: 16px; }
+  .progress-bar-bg {
+    width: 100%; height: 8px; background: var(--card);
+    border-radius: 4px; overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.4s ease;
+  }
+  .progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;
+  }
+  /* === Tabs === */
+  .tabs {
+    display: flex; gap: 4px; padding: 16px 32px 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 10px 20px; border: none; cursor: pointer;
+    background: transparent; color: var(--text-dim);
+    font-size: 0.85rem; font-weight: 500;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s; white-space: nowrap;
+    border-radius: 8px 8px 0 0;
+  }
+  .tab:hover { background: var(--surface); color: var(--text); }
+  .tab.active {
+    color: var(--accent); border-bottom-color: var(--accent);
+    background: var(--surface);
+  }
+  .tab .badge {
+    display: inline-block; margin-left: 6px;
+    padding: 1px 7px; border-radius: 10px;
+    font-size: 0.7rem; font-weight: 700;
+    background: var(--card); color: var(--text-dim);
+  }
+  .tab.active .badge { background: var(--accent); color: var(--bg); }
+  /* === Content === */
+  .content { padding: 24px 32px 100px; }
+  .activity-panel { display: none; }
+  .activity-panel.active { display: block; }
+  .ac-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 20px;
+  }
+  .ac-header h2 { font-size: 1.2rem; }
+  .ac-header .ac-badge {
+    padding: 4px 12px; border-radius: 6px;
+    font-size: 0.75rem; font-weight: 600;
+    background: var(--accent); color: var(--bg);
+  }
+  .ac-progress {
+    margin-left: auto; font-size: 0.85rem; color: var(--text-dim);
+  }
+  /* === Task Cards === */
+  .task-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+    margin-bottom: 12px; transition: all 0.2s;
+  }
+  .task-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .task-card.completed { border-color: var(--green); opacity: 0.85; }
+  .task-card.completed .task-title { text-decoration: line-through; color: var(--text-dim); }
+  .task-top { display: flex; align-items: flex-start; gap: 12px; }
+  .task-check {
+    width: 22px; height: 22px; border-radius: 6px;
+    border: 2px solid var(--border); background: transparent;
+    cursor: pointer; flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; color: transparent; font-size: 14px;
+  }
+  .task-check:hover { border-color: var(--accent); }
+  .task-check.checked {
+    background: var(--green); border-color: var(--green); color: #fff;
+  }
+  .task-info { flex: 1; }
+  .task-id { font-size: 0.75rem; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
+  .task-title { font-size: 0.95rem; line-height: 1.5; }
+  .task-timestamp {
+    font-size: 0.75rem; color: var(--green); margin-top: 4px;
+    display: none;
+  }
+  .task-card.completed .task-timestamp { display: block; }
+  .task-memo {
+    margin-top: 12px; width: 100%;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px;
+    color: var(--text); font-size: 0.85rem;
+    resize: vertical; min-height: 40px; font-family: inherit;
+  }
+  .task-memo:focus { outline: none; border-color: var(--accent); }
+  .task-memo::placeholder { color: var(--text-dim); }
+  /* === Footer === */
+  .footer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 12px 32px; display: flex; gap: 12px; justify-content: flex-end;
+  }
+  .btn {
+    padding: 8px 20px; border: none; border-radius: 8px;
+    font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: var(--bg); }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-danger:hover { opacity: 0.9; }
+  .btn-secondary { background: var(--card); color: var(--text); }
+  .btn-secondary:hover { background: var(--border); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>SUP11 MLデータ管理マネージャー</h1>
+  <div class="subtitle">MLE-book SUP.11 機械学習データ管理 — アクティビティ・タスク管理ツール</div>
+  <div class="progress-section">
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="globalProgress" style="width:0%"></div></div>
+    <div class="progress-label"><span>全体進捗</span><span id="globalProgressText">0 / 23 タスク完了 (0%)</span></div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div class="content" id="content"></div>
+
+<div class="footer">
+  <button class="btn btn-secondary" onclick="exportJSON()">📥 JSONエクスポート</button>
+  <button class="btn btn-danger" onclick="resetAll()">🗑️ リセット</button>
+</div>
+
+<script>
+const ACTIVITIES = [
+  {
+    id: "AC01", name: "MLデータ管理システムの確立", bp: "SUP11.BP1",
+    tasks: [
+      { id: "SUP11.TA0101", title: "データ収集を支援するためのMLデータ管理システムを検討する" },
+      { id: "SUP11.TA0102", title: "データラベリングを支援するためのMLデータ管理システムを検討する" },
+      { id: "SUP11.TA0103", title: "データアノテーションを支援するためのMLデータ管理システムを検討する" },
+      { id: "SUP11.TA0104", title: "MLデータ管理活動について支援するためのMLデータ管理システムを確立する" },
+      { id: "SUP11.TA0105", title: "MLデータに関連する情報源について支援するためのMLデータ管理システムを確立する" },
+      { id: "SUP11.TA0106", title: "ステータスモデルを含むMLデータのライフサイクルについて支援するためのMLデータ管理システムを確立する" },
+      { id: "SUP11.TA0107", title: "影響を受ける関係者との窓口について支援するためのMLデータ管理システムを確立する" },
+    ]
+  },
+  {
+    id: "AC02", name: "MLデータの品質アプローチの作成", bp: "SUP11.BP2",
+    tasks: [
+      { id: "SUP11.TA0201", title: "品質基準とデータ情報源の関連性を定義する" },
+      { id: "SUP11.TA0202", title: "品質基準とラベリングの関連性を定義する" },
+      { id: "SUP11.TA0203", title: "品質基準とアノテーションの関連性を定義する" },
+      { id: "SUP11.TA0204", title: "データのバイアスを回避するための支援活動を定義する" },
+      { id: "SUP11.TA0205", title: "データの品質基準を定義する" },
+      { id: "SUP11.TA0206", title: "データの品質基準に基づいて分析できることを保証する" },
+      { id: "SUP11.TA0207", title: "データのバイアスを回避できることを保証する" },
+    ]
+  },
+  {
+    id: "AC03", name: "MLデータの収集", bp: "SUP11.BP3",
+    tasks: [
+      { id: "SUP11.TA0301", title: "生データに関連する情報源を識別する" },
+      { id: "SUP11.TA0302", title: "生データに関連する情報源の変化点を継続的に監視する" },
+      { id: "SUP11.TA0303", title: "生データを収集する" },
+    ]
+  },
+  {
+    id: "AC04", name: "MLデータの処理", bp: "SUP11.BP4",
+    tasks: [
+      { id: "SUP11.TA0401", title: "処理対象のデータ情報源を識別する" },
+      { id: "SUP11.TA0402", title: "データ処理の変化点を継続的に監視する" },
+      { id: "SUP11.TA0403", title: "データを処理する" },
+    ]
+  },
+  {
+    id: "AC05", name: "MLデータの品質保証", bp: "SUP11.BP5",
+    tasks: [
+      { id: "SUP11.TA0501", title: "品質アプローチに従って活動を実施する" },
+      { id: "SUP11.TA0502", title: "品質基準を満足していることを保証する" },
+    ]
+  },
+  {
+    id: "AC06", name: "処理済MLデータの伝達", bp: "SUP11.BP6",
+    tasks: [
+      { id: "SUP11.TA0601", title: "合意された処理済みのMLデータについて、影響を受ける関係者へ伝達する" },
+    ]
+  },
+];
+
+const STORAGE_KEY = "sup11_manager_data";
+
+function loadData() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+}
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function renderTabs() {
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = ACTIVITIES.map((ac, i) => {
+    const data = loadData();
+    const done = ac.tasks.filter(t => data[t.id]?.completed).length;
+    return `<button class="tab${i===0?' active':''}" onclick="switchTab(${i})">${ac.id}<span class="badge">${done}/${ac.tasks.length}</span></button>`;
+  }).join("");
+}
+
+function renderContent() {
+  const content = document.getElementById("content");
+  content.innerHTML = ACTIVITIES.map((ac, i) => {
+    const data = loadData();
+    const done = ac.tasks.filter(t => data[t.id]?.completed).length;
+    const cards = ac.tasks.map(task => {
+      const td = data[task.id] || {};
+      const checked = td.completed ? "checked" : "";
+      const completed = td.completed ? "completed" : "";
+      const ts = td.timestamp ? `✅ ${td.timestamp}` : "";
+      const memo = td.memo || "";
+      return `
+        <div class="task-card ${completed}" id="card-${task.id.replace(/\./g,'-')}">
+          <div class="task-top">
+            <button class="task-check ${checked}" onclick="toggleTask('${task.id}')" title="完了/未完了">✓</button>
+            <div class="task-info">
+              <div class="task-id">${task.id}</div>
+              <div class="task-title">${task.title}</div>
+              <div class="task-timestamp">${ts}</div>
+            </div>
+          </div>
+          <textarea class="task-memo" placeholder="メモ・記録を入力..." onchange="saveMemo('${task.id}', this.value)">${memo}</textarea>
+        </div>`;
+    }).join("");
+    return `
+      <div class="activity-panel${i===0?' active':''}" id="panel-${i}">
+        <div class="ac-header">
+          <span class="ac-badge">${ac.bp}</span>
+          <h2>${ac.id}: ${ac.name}</h2>
+          <span class="ac-progress">${done} / ${ac.tasks.length} 完了</span>
+        </div>
+        ${cards}
+      </div>`;
+  }).join("");
+}
+
+function switchTab(index) {
+  document.querySelectorAll(".tab").forEach((t, i) => t.classList.toggle("active", i === index));
+  document.querySelectorAll(".activity-panel").forEach((p, i) => p.classList.toggle("active", i === index));
+}
+
+function toggleTask(taskId) {
+  const data = loadData();
+  if (!data[taskId]) data[taskId] = {};
+  data[taskId].completed = !data[taskId].completed;
+  data[taskId].timestamp = data[taskId].completed ? new Date().toLocaleString("ja-JP") : null;
+  saveData(data);
+  renderTabs();
+  renderContent();
+  updateProgress();
+  // Restore active tab
+  const activeIdx = [...document.querySelectorAll(".tab")].findIndex(t => t.classList.contains("active"));
+  if (activeIdx < 0) switchTab(0);
+}
+
+function saveMemo(taskId, value) {
+  const data = loadData();
+  if (!data[taskId]) data[taskId] = {};
+  data[taskId].memo = value;
+  saveData(data);
+}
+
+function updateProgress() {
+  const data = loadData();
+  const total = ACTIVITIES.reduce((s, ac) => s + ac.tasks.length, 0);
+  const done = ACTIVITIES.reduce((s, ac) => s + ac.tasks.filter(t => data[t.id]?.completed).length, 0);
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+  document.getElementById("globalProgress").style.width = pct + "%";
+  document.getElementById("globalProgressText").textContent = `${done} / ${total} タスク完了 (${pct}%)`;
+}
+
+function exportJSON() {
+  const data = loadData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "sup11_data_" + new Date().toISOString().slice(0,10) + ".json";
+  a.click();
+}
+
+function resetAll() {
+  if (confirm("すべてのデータをリセットしますか？この操作は取り消せません。")) {
+    localStorage.removeItem(STORAGE_KEY);
+    renderTabs(); renderContent(); updateProgress();
+  }
+}
+
+// Maintain active tab across re-renders
+function renderAll() {
+  const prevActive = [...document.querySelectorAll(".tab")].findIndex(t => t.classList.contains("active"));
+  renderTabs(); renderContent(); updateProgress();
+  if (prevActive >= 0) switchTab(prevActive);
+}
+
+// Init
+renderTabs(); renderContent(); updateProgress();
+</script>
+</body>
+</html>
