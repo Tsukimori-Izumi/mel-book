@@ -1,4 +1,4 @@
-=== FizzBuzz ML Results (Accuracy: 100.0%) ===
+=== FizzBuzz Results (Rule-Based) ===
 
 1: 1
 2: 2

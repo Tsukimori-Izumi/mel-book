@@ -1,1 +1,1 @@
-req1:fizzbuzzを行うプログラム
+req1:fizzbuzzをルールベースで行うプログラム
