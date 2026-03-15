@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUP11 ML Data Governance Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #030712;
+    --surface: rgba(30, 41, 59, 0.7);
+    --surface-solid: #1e293b;
+    --card: rgba(51, 65, 85, 0.4);
+    --border: rgba(148, 163, 184, 0.1);
+    --text: #f8fafc;
+    --text-dim: #94a3b8;
+    --accent: #38bdf8;
+    --accent-glow: rgba(56, 189, 248, 0.3);
+    --accent2: #818cf8;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --glass: blur(12px);
+    --radius-lg: 20px;
+    --radius-md: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: 'Inter', 'Meiryo', sans-serif;
+    background: var(--bg);
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(129, 140, 248, 0.15) 0, transparent 50%);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 80px;
+    overflow-x: hidden;
+  }
+
+  h1, h2, .brand { font-family: 'Outfit', sans-serif; }
+
+  /* === Header === */
+  .header {
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: var(--glass);
+    border-bottom: 1px solid var(--border);
+    padding: 32px;
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .title-group h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .title-group .subtitle {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin-top: 4px;
+  }
+
+  .progress-container {
+    width: 300px;
+  }
+
+  .progress-bg {
+    width: 100%; height: 6px;
+    background: var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    box-shadow: 0 0 15px var(--accent-glow);
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 0.75rem; color: var(--text-dim); margin-top: 8px;
+    font-weight: 500;
+  }
+
+  /* === Tabs === */
+  .nav-wrapper {
+    background: rgba(15, 23, 42, 0.4);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+  }
+
+  .tabs {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    padding: 16px 24px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s;
+    white-space: nowrap;
+  }
+
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); }
+
+  .tab.active::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 2px; background: var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow);
+  }
+
+  .tab .count {
+    font-size: 0.7rem;
+    background: var(--card);
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 8px;
+    opacity: 0.6;
+  }
+
+  .tab.active .count { opacity: 1; background: var(--accent); color: var(--bg); }
+
+  /* === Main Content === */
+  .main {
+    max-width: 1200px;
+    margin: 32px auto;
+    padding: 0 32px;
+  }
+
+  .panel { display: none; animation: fadeIn 0.4s ease-out; }
+  .panel.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-header {
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .bp-tag {
+    background: var(--accent-glow);
+    color: var(--accent);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+  }
+
+  .task-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* === Task Cards === */
+  .card {
+    background: var(--surface);
+    backdrop-filter: var(--glass);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card:hover {
+    border-color: rgba(56, 189, 248, 0.4);
+    transform: translateX(4px);
+    background: rgba(30, 41, 59, 0.9);
+  }
+
+  .card.done {
+    border-color: rgba(16, 185, 129, 0.3);
+    background: rgba(16, 185, 129, 0.05);
+  }
+
+  .card-top {
+    display: flex;
+    gap: 18px;
+  }
+
+  .checkbox {
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    border: 2px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    color: transparent;
+    font-weight: 900;
+  }
+
+  .checkbox:hover { border-color: var(--accent); }
+  .checkbox.checked {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+  }
+
+  .card-info { flex: 1; }
+  
+  .card-id {
+    font-size: 0.7rem;
+    color: var(--accent);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+
+  .card-title {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  .card.done .card-title {
+    color: var(--text-dim);
+    text-decoration: line-through;
+  }
+
+  .card-meta {
+    margin-top: 12px;
+    font-size: 0.75rem;
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .card.done .card-meta { opacity: 1; }
+
+  .memo-area {
+    margin-top: 20px;
+    width: 100%;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    color: var(--text);
+    font-size: 0.85rem;
+    font-family: inherit;
+    resize: none;
+    min-height: 44px;
+    transition: all 0.2s;
+  }
+
+  .memo-area:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: rgba(15, 23, 42, 0.8);
+    min-height: 100px;
+  }
+
+  /* === Footer === */
+  .footer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: var(--glass);
+    border-top: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex; justify-content: flex-end; gap: 12px;
+    z-index: 100;
+  }
+
+  .btn {
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px var(--accent-glow); }
+
+  .btn-secondary {
+    background: var(--card);
+    color: var(--text);
+    border-color: var(--border);
+  }
+  .btn-secondary:hover { background: var(--surface-solid); }
+
+  .btn-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--red);
+    border-color: rgba(239, 68, 68, 0.2);
+  }
+  .btn-danger:hover { background: var(--red); color: white; }
+
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-content">
+    <div class="title-group">
+      <h1>SUP11 Data Manager</h1>
+      <p class="subtitle">A-SPICE 4.0 ML Data Management Lifecycle</p>
+    </div>
+    <div class="progress-container">
+      <div class="progress-bg"><div class="progress-fill" id="globalProgress"></div></div>
+      <div class="progress-label">
+        <span id="globalProgressText">0 / 23 Tasks</span>
+        <span id="globalProgressPct">0%</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="nav-wrapper">
+  <div class="tabs" id="tabs"></div>
+</nav>
+
+<main class="main" id="content"></main>
+
+<footer class="footer">
+  <button class="btn btn-secondary" onclick="exportJSON()">Export JSON</button>
+  <button class="btn btn-danger" onclick="resetAll()">Reset All</button>
+</footer>
+
+<script>
+const ACTIVITIES = [
+  {
+    id: "AC01", name: "Management System", bp: "SUP11.BP1",
+    tasks: [
+      { id: "SUP11.TA0101", title: "Evaluate systems for data collection" },
+      { id: "SUP11.TA0102", title: "Evaluate systems for data labeling" },
+      { id: "SUP11.TA0103", title: "Evaluate systems for data annotation" },
+      { id: "SUP11.TA0104", title: "Establish ML data management system" },
+      { id: "SUP11.TA0105", title: "Establish source data support" },
+      { id: "SUP11.TA0106", title: "Establish data lifecycle & status model" },
+      { id: "SUP11.TA0107", title: "Establish stakeholder interfaces" },
+    ]
+  },
+  {
+    id: "AC02", name: "Quality Approach", bp: "SUP11.BP2",
+    tasks: [
+      { id: "SUP11.TA0201", title: "Relate quality criteria to source data" },
+      { id: "SUP11.TA0202", title: "Relate quality criteria to labeling" },
+      { id: "SUP11.TA0203", title: "Relate quality criteria to annotation" },
+      { id: "SUP11.TA0204", title: "Define activities to avoid bias" },
+      { id: "SUP11.TA0205", title: "Define ML data quality criteria" },
+      { id: "SUP11.TA0206", title: "Ensure feasibility of quality analysis" },
+      { id: "SUP11.TA0207", title: "Ensure avoidance of bias" },
+    ]
+  },
+  {
+    id: "AC03", name: "Data Collection", bp: "SUP11.BP3",
+    tasks: [
+      { id: "SUP11.TA0301", title: "Identify source data sources" },
+      { id: "SUP11.TA0302", title: "Monitor changes in data sources" },
+      { id: "SUP11.TA0303", title: "Collect raw ML data" },
+    ]
+  },
+  {
+    id: "AC04", name: "Data Processing", bp: "SUP11.BP4",
+    tasks: [
+      { id: "SUP11.TA0401", title: "Identify data sources for processing" },
+      { id: "SUP11.TA0402", title: "Monitor changes in processing steps" },
+      { id: "SUP11.TA0403", title: "Process ML data" },
+    ]
+  },
+  {
+    id: "AC05", name: "Quality Assurance", bp: "SUP11.BP5",
+    tasks: [
+      { id: "SUP11.TA0501", title: "Execute quality activities" },
+      { id: "SUP11.TA0502", title: "Verify satisfaction of quality criteria" },
+    ]
+  },
+  {
+    id: "AC06", name: "Communication", bp: "SUP11.BP6",
+    tasks: [
+      { id: "SUP11.TA0601", title: "Communicate agreed ML data to stakeholders" },
+    ]
+  },
+];
+
+const STORAGE_KEY = "sup11_manager_v2_data";
+
+function loadData() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+}
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function renderTabs() {
+  const tabs = document.getElementById("tabs");
+  const data = loadData();
+  tabs.innerHTML = ACTIVITIES.map((ac, i) => {
+    const done = ac.tasks.filter(t => data[t.id]?.completed).length;
+    return `<button class="tab${i===0?' active':''}" onclick="switchTab(${i})">${ac.id}<span class="count">${done}/${ac.tasks.length}</span></button>`;
+  }).join("");
+}
+
+function renderContent() {
+  const content = document.getElementById("content");
+  const data = loadData();
+  content.innerHTML = ACTIVITIES.map((ac, i) => {
+    const done = ac.tasks.filter(t => data[t.id]?.completed).length;
+    const cards = ac.tasks.map(task => {
+      const td = data[task.id] || {};
+      const cardClass = td.completed ? "card done" : "card";
+      const checkClass = td.completed ? "checkbox checked" : "checkbox";
+      const ts = td.timestamp ? `Completed at ${td.timestamp}` : "";
+      return `
+        <div class="${cardClass}" id="card-${task.id}">
+          <div class="card-top">
+            <button class="${checkClass}" onclick="toggleTask('${task.id}')">✓</button>
+            <div class="card-info">
+              <div class="card-id">${task.id}</div>
+              <div class="card-title">${task.title}</div>
+              <div class="card-meta">✨ ${ts}</div>
+            </div>
+          </div>
+          <textarea class="memo-area" placeholder="Add notes or evidence links..." onchange="saveMemo('${task.id}', this.value)">${td.memo || ""}</textarea>
+        </div>`;
+    }).join("");
+    return `
+      <div class="panel${i===0?' active':''}" id="panel-${i}">
+        <div class="section-header">
+          <span class="bp-tag">${ac.bp}</span>
+          <h2>${ac.name}</h2>
+        </div>
+        <div class="task-grid">${cards}</div>
+      </div>`;
+  }).join("");
+}
+
+function switchTab(index) {
+  document.querySelectorAll(".tab").forEach((t, i) => t.classList.toggle("active", i === index));
+  document.querySelectorAll(".panel").forEach((p, i) => p.classList.toggle("active", i === index));
+}
+
+function toggleTask(taskId) {
+  const data = loadData();
+  if (!data[taskId]) data[taskId] = {};
+  data[taskId].completed = !data[taskId].completed;
+  data[taskId].timestamp = data[taskId].completed ? new Date().toLocaleString() : null;
+  saveData(data);
+  renderAll();
+}
+
+function saveMemo(taskId, value) {
+  const data = loadData();
+  if (!data[taskId]) data[taskId] = {};
+  data[taskId].memo = value;
+  saveData(data);
+}
+
+function updateProgress() {
+  const data = loadData();
+  const total = ACTIVITIES.reduce((s, ac) => s + ac.tasks.length, 0);
+  const done = ACTIVITIES.reduce((s, ac) => s + ac.tasks.filter(t => data[t.id]?.completed).length, 0);
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+  document.getElementById("globalProgress").style.width = pct + "%";
+  document.getElementById("globalProgressText").textContent = `${done} / ${total} Tasks`;
+  document.getElementById("globalProgressPct").textContent = pct + "%";
+}
+
+function renderAll() {
+  const activeIdx = [...document.querySelectorAll(".tab")].findIndex(t => t.classList.contains("active"));
+  renderTabs(); renderContent(); updateProgress();
+  if (activeIdx >= 0) switchTab(activeIdx);
+}
+
+function exportJSON() {
+  const data = loadData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `sup11_export_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function resetAll() {
+  if (confirm("Reset all progress? This cannot be undone.")) {
+    localStorage.removeItem(STORAGE_KEY);
+    renderAll();
+  }
+}
+
+// Init
+renderAll();
+</script>
+</body>
+</html>
